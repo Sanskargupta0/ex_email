@@ -6,6 +6,16 @@ yarn-debug.log*
 yarn-error.log*
 lerna-debug.log*
 
+# Database files
+*.db
+*.db-journal
+email_service.db
+email_service.db-journal
+
+# Data directory (keep .gitkeep)
+data/*
+!data/.gitkeep
+
 # Diagnostic reports (https://nodejs.org/api/report.html)
 report.[0-9]*.[0-9]*.[0-9]*.[0-9]*.json
 

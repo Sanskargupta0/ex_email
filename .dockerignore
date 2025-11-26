@@ -1,0 +1,26 @@
+# Docker ignore file
+node_modules
+npm-debug.log
+.env
+.git
+.gitignore
+*.md
+!README.md
+*.db
+*.db-journal
+email_service.db
+data/*
+!data/.gitkeep
+.DS_Store
+dist
+uploads
+.vscode
+.idea
+*.log
+coverage
+.nyc_output
+start_server.bat
+start_worker.bat
+start_docker.bat
+stop_docker.bat
+docker-compose.yml
