@@ -1,0 +1,34 @@
+name: Deploy Email Service to Hetzner
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - "**"
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.SSH_HOST }} 
+          username: ${{ secrets.SSH_USER }}        # e.g. root
+          password: ${{ secrets.SSH_PASSWORD }}    # or use SSH_KEY instead of password
+          script: |
+            cd /opt/email-service
+
+            # first-time clone if .git missing
+            if [ ! -d ".git" ]; then
+              git clone git@github-email:Sanskargupta0/ex_email.git .
+            fi
+
+            # pull latest code
+            git fetch origin
+            git reset --hard origin/main
+
+            # build and restart container
+            docker compose build
+            docker compose up -d
