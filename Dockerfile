@@ -18,7 +18,7 @@ RUN npx prisma generate
 
 # Copy application source
 COPY src ./src/
-COPY .env.example ./.env.example
+COPY .example.env ./.example.env
 
 # Copy entrypoint script
 COPY docker-entrypoint.sh /usr/local/bin/

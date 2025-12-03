@@ -7,8 +7,8 @@ echo.
 REM Check if .env file exists
 if not exist ".env" (
     echo [!] WARNING: .env file not found
-    echo Creating .env from .env.example...
-    copy .env.example .env
+    echo Creating .env from .example.env...
+    copy .example.env .env
     echo.
     echo Please edit .env file with your actual configuration
     echo Then run this script again.
