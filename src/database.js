@@ -1,4 +1,5 @@
 import { PrismaClient } from "@prisma/client";
+import logger from "./logger.js";
 
 // Initialize Prisma Client
 export const prisma = new PrismaClient({
@@ -15,6 +16,7 @@ process.on("beforeExit", async () => {
  */
 export async function initializeDatabase() {
   try {
+    logger.info("Checking database configuration...");
     // Check if email config exists, create default if not
     const configCount = await prisma.emailConfig.count();
     
@@ -26,22 +28,37 @@ export async function initializeDatabase() {
           deleteCycle: "daily"
         }
       });
-      console.log("✅ Created default email configuration");
+      logger.info("✅ Created default email configuration");
+    } else {
+      logger.info(`✅ Email configuration exists (${configCount} config(s) found)`);
     }
 
-    console.log("✅ Database initialized");
+    logger.info("✅ Database initialized successfully");
   } catch (error) {
-    console.error("❌ Database initialization error:", error);
+    logger.error("❌ Database initialization error:", error);
     throw error;
   }
 }
 
 /**
- * Create email log entry
+ * Create email log entry (upsert to handle job ID reuse)
  */
 export async function createEmailLog({ to, subject, html, text, jobId, status = "queued" }) {
-  return await prisma.emailLog.create({
-    data: {
+  logger.debug(`Creating/updating email log: jobId=${jobId}, to=${to}`);
+  const result = await prisma.emailLog.upsert({
+    where: { jobId },
+    update: {
+      to,
+      subject,
+      html,
+      text,
+      status,
+      error: null,
+      sentAt: null,
+      attempts: 0,
+      createdAt: new Date()
+    },
+    create: {
       to,
       subject,
       html,
@@ -50,6 +67,8 @@ export async function createEmailLog({ to, subject, html, text, jobId, status = 
       status
     }
   });
+  logger.debug(`Email log saved: id=${result.id}, jobId=${jobId}`);
+  return result;
 }
 
 /**

@@ -36,8 +36,10 @@ services:
       - EMAIL_PASS=${EMAIL_PASS}
       - TASK_SERVICE_URL=${TASK_SERVICE_URL}
       - NODE_ENV=production
+      - LOG_LEVEL=info
     volumes:
       - ./data:/app/data
+      - ./logs:/app/logs
     depends_on:
       redis:
         condition: service_healthy
@@ -66,8 +68,10 @@ services:
       - EMAIL_USER=${EMAIL_USER}
       - EMAIL_PASS=${EMAIL_PASS}
       - NODE_ENV=production
+      - LOG_LEVEL=info
     volumes:
       - ./data:/app/data
+      - ./logs:/app/logs
     depends_on:
       redis:
         condition: service_healthy

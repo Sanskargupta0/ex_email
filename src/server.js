@@ -9,9 +9,19 @@ import { initializeDatabase, createEmailLog } from "./database.js";
 import { initializeScheduler } from "./scheduler.js";
 import emailRoutes from "./routes/emails.js";
 import configRoutes from "./routes/config.js";
+import logger from "./logger.js";
 
 const app = express();
 app.use(express.json());
+
+// Request logging middleware
+app.use((req, res, next) => {
+  logger.info(`${req.method} ${req.path}`, {
+    ip: req.ip,
+    userAgent: req.get('user-agent')
+  });
+  next();
+});
 
 // CORS configuration
 app.use(cors({
@@ -35,11 +45,17 @@ app.use((req, res, next) => {
 });
 
 // Initialize database and scheduler
+logger.info("Initializing database...");
 await initializeDatabase();
+logger.info("Database initialized successfully");
+
+logger.info("Starting scheduler...");
 initializeScheduler();
+logger.info("Scheduler started successfully");
 
 // Health check endpoint (no auth required)
 app.get("/api/health", (req, res) => {
+  logger.debug("Health check requested");
   res.json({ status: "ok", service: "email-service" });
 });
 
@@ -51,12 +67,15 @@ app.use("/api/config", configRoutes);
 app.post("/api/send-email", matchSecretKey, async (req, res) => {
   try {
     const { to, subject, html, text } = req.body;
+    logger.info(`Email request received: to=${to}, subject="${subject}"`);
 
     if (!to || !subject || (!html && !text)) {
+      logger.warn(`Invalid email request: missing fields`, { to, subject, hasHtml: !!html, hasText: !!text });
       return res.status(400).json({ message: "Missing email fields" });
     }
 
     // Add job to queue
+    logger.debug(`Adding job to queue for ${to}`);
     const job = await emailQueue.add(
       { to, subject, html, text },
       {
@@ -66,8 +85,11 @@ app.post("/api/send-email", matchSecretKey, async (req, res) => {
         removeOnFail: false,
       }
     );
+    logger.info(`Job added to queue: jobId=${job.id}`);
+
 
     // Create database log entry
+    logger.debug(`Creating email log entry for jobId=${job.id}`);
     const emailLog = await createEmailLog({
       to,
       subject,
@@ -76,20 +98,25 @@ app.post("/api/send-email", matchSecretKey, async (req, res) => {
       jobId: job.id.toString(),
       status: "queued"
     });
+    logger.info(`Email log created: emailId=${emailLog.id}, jobId=${job.id}`);
+
 
     // Respond immediately – async processing
+    logger.info(`Email queued successfully: emailId=${emailLog.id}, jobId=${job.id}, to=${to}`);
     return res.status(202).json({
       message: "Email queued",
       jobId: job.id,
       emailId: emailLog.id
     });
   } catch (err) {
-    console.error("Error queuing email:", err);
+    logger.error("Error queuing email:", err);
     return res.status(500).json({ message: "Internal server error" });
   }
 });
 
 const PORT = process.env.PORT || 4000;
 app.listen(PORT, () => {
-  console.log(`🚀 Email API running on port ${PORT}`);
+  logger.info(`🚀 Email API running on port ${PORT}`);
+  logger.info(`Environment: ${process.env.NODE_ENV || 'development'}`);
+  logger.info(`Redis URL: ${process.env.REDIS_URL || 'redis://localhost:6379'}`);
 });
