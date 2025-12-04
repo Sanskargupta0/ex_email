@@ -37,10 +37,7 @@ emailQueue.process(async (job, done) => {
 
     logger.info(`✅ Job completed: jobId=${jobId}`);
     done();
-  } catch (err) {
-    const jobId = job.id.toString();
-    logger.error(`❌ Error processing job ${jobId}:`, err);
-    
+  } catch (err) {    
     // Update status to failed
     const jobId = job.id.toString();
     try {
